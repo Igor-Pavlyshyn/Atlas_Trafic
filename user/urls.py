@@ -1,11 +1,15 @@
 from django.urls import path
-from Atlas_Trafic_API.user.views import CreateUserView, CreateTokenView, DeleteTokenView, ManageUserView
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from user.views import CreateUserView, LoginView, LogoutView, VerifyOTPView, ManageUserView
 
 app_name = "user"
 
 urlpatterns = [
-    path("register/", CreateUserView.as_view(), name="create"),
-    path("login/", CreateTokenView.as_view(), name="login"),
-    path("logout/", DeleteTokenView.as_view(), name="logout"),
-    path("me/", ManageUserView.as_view(), name="manage"),
+    path("register/", CreateUserView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("verify-otp/", VerifyOTPView.as_view(), name="verify_otp"),
+    path("me/", ManageUserView.as_view(), name="manage")
 ]

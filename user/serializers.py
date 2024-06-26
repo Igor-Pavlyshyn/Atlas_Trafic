@@ -1,57 +1,35 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django_otp.plugins.otp_email.models import EmailDevice
 
-from django.contrib.auth import authenticate
-from django.utils.translation import gettext_lazy as _
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = get_user_model()
+        model = User
         fields = ("id", "email", "password", "is_staff")
         read_only_fields = ("is_staff",)
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
 
     def create(self, validated_data):
-        """Create a new user with encrypted password and return it"""
-        return get_user_model().objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+        self.create_otp_device(user)
+        return user
 
     def update(self, instance, validated_data):
-        """Update a user, set the password correctly and return it"""
         password = validated_data.pop("password", None)
         user = super().update(instance, validated_data)
         if password:
             user.set_password(password)
             user.save()
-
         return user
 
+    def create_otp_device(self, user):
+        device = EmailDevice.objects.create(user=user, email=user.email)
+        device.generate_challenge()
 
-class AuthTokenSerializer(serializers.Serializer):
-    email = serializers.EmailField(label=_("Email"))
-    password = serializers.CharField(
-        label=_(
-            "Password",
-        ),
-        style={"input_type": "password"},
-        trim_whitespace=False,
-    )
 
-    def validate(self, attrs):
-        email = attrs.get("email")
-        password = attrs.get("password")
-        if email and password:
-            user = authenticate(
-                request=self.context.get("request"), email=email, password=password
-            )
-            # The authenticate call simply returns None for is_active=False
-            # users. (Assuming the default ModelBackend authentication
-            # backend.)
-            if not user:
-                msg = _("Unable to log in with provided credentials.")
-                raise serializers.ValidationError(msg, code="authorization")
-        else:
-            msg = _('Must include "username" and "password".')
-            raise serializers.ValidationError(msg, code="authorization")
-        attrs["user"] = user
-        return attrs
+class OTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
