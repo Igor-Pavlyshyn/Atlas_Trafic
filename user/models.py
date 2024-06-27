@@ -45,6 +45,9 @@ class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
     otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
+    answer_1 = models.CharField(max_length=255, blank=True, null=True)
+    answer_2 = models.CharField(max_length=255, blank=True, null=True)
+    answer_3 = models.CharField(max_length=255, blank=True, null=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

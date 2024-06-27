@@ -6,9 +6,13 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    answer_1 = serializers.CharField(required=True, max_length=255)
+    answer_2 = serializers.CharField(required=True, max_length=255)
+    answer_3 = serializers.CharField(required=True, max_length=255)
+
     class Meta:
         model = User
-        fields = ("id", "email", "password", "is_staff")
+        fields = ("id", "email", "password", "answer_1", "answer_2", "answer_3", "is_staff")
         read_only_fields = ("is_staff",)
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
 
@@ -28,6 +32,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create_otp_device(self, user):
         device = EmailDevice.objects.create(user=user, email=user.email)
         device.generate_challenge()
+
+
+class RegistrationSerializer(UserSerializer):
+    pass
+
+
+class LoginSerializer(UserSerializer):
+    answer_1 = serializers.CharField(required=False, max_length=255, allow_blank=True)
+    answer_2 = serializers.CharField(required=False, max_length=255, allow_blank=True)
+    answer_3 = serializers.CharField(required=False, max_length=255, allow_blank=True)
 
 
 class OTPSerializer(serializers.Serializer):
