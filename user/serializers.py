@@ -12,7 +12,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "password", "answer_1", "answer_2", "answer_3", "is_staff")
+        fields = (
+            "id",
+            "email",
+            "password",
+            "answer_1",
+            "answer_2",
+            "answer_3",
+            "is_staff",
+        )
         read_only_fields = ("is_staff",)
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
 
@@ -47,3 +55,29 @@ class LoginSerializer(UserSerializer):
 class OTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(max_length=128)
+    repeat_password = serializers.CharField(max_length=128)
+
+    def validate(self, attrs):
+        if not User.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "User not found in serializer"})
+
+        if attrs["new_password"] != attrs["repeat_password"]:
+            raise serializers.ValidationError(
+                {"password_error": "Passwords do not match"}
+            )
+        return attrs
+
+
+class SendOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, attrs):
+        if not User.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "User not found"})
+        return attrs

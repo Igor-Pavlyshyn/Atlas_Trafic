@@ -12,6 +12,8 @@ from user.serializers import (
     OTPSerializer,
     RegistrationSerializer,
     LoginSerializer,
+    ResetPasswordSerializer,
+    SendOTPSerializer,
 )
 
 User = get_user_model()
@@ -80,7 +82,9 @@ class LoginView(generics.GenericAPIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def post(self, request):
         try:
@@ -130,3 +134,46 @@ class VerifyOTPView(generics.GenericAPIView):
             return Response(
                 {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class ResetPasswordView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = ResetPasswordSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        otp = serializer.validated_data["otp"]
+        new_password = serializer.validated_data["new_password"]
+
+        user = User.objects.get(email=email)
+        device = EmailDevice.objects.filter(user=user).first()
+        if device and device.verify_token(otp):
+            user.set_password(new_password)
+            user.save()
+            return Response(
+                {"detail": "Password reset successful"}, status=status.HTTP_200_OK
+            )
+        return Response(
+            {"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class SendOTPView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = SendOTPSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        user = User.objects.get(email=email)
+        device = EmailDevice.objects.filter(user=user).first()
+        if not device:
+            device = EmailDevice.objects.create(user=user, email=user.email)
+        device.generate_challenge()
+        return Response(
+            {"detail": "OTP sent to your email"}, status=status.HTTP_200_OK
+        )
