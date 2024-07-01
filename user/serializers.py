@@ -56,6 +56,12 @@ class OTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
+    def validate(self, attrs):
+        if not User.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "User not found"})
+        return attrs
+
+
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -65,7 +71,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not User.objects.filter(email=attrs["email"]).exists():
-            raise serializers.ValidationError({"email": "User not found in serializer"})
+            raise serializers.ValidationError({"email": "User not found"})
 
         if attrs["new_password"] != attrs["repeat_password"]:
             raise serializers.ValidationError(

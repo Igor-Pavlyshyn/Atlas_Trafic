@@ -115,25 +115,20 @@ class VerifyOTPView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"]
         otp = serializer.validated_data["otp"]
-        try:
-            user = User.objects.get(email=email)
-            device = EmailDevice.objects.filter(user=user).first()
-            if device and device.verify_token(otp):
-                refresh = RefreshToken.for_user(user)
-                access = AccessToken.for_user(user)
-                return Response(
-                    {
-                        "refresh": str(refresh),
-                        "access": str(access),
-                    }
-                )
+        user = User.objects.get(email=email)
+        device = EmailDevice.objects.filter(user=user).first()
+        if device and device.verify_token(otp):
+            refresh = RefreshToken.for_user(user)
+            access = AccessToken.for_user(user)
             return Response(
-                {"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+                {
+                    "refresh": str(refresh),
+                    "access": str(access),
+                }
             )
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        return Response(
+            {"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class ResetPasswordView(generics.GenericAPIView):
