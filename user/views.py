@@ -25,8 +25,7 @@ class CreateUserView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        device = EmailDevice.objects.create(user=user, email=user.email)
-        device.generate_challenge()
+        EmailDevice.objects.create(user=user, email=user.email)
 
 
 class LoginView(generics.GenericAPIView):

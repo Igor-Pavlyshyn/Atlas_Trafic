@@ -38,7 +38,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        self.create_otp_device(user)
         return user
 
     def update(self, instance, validated_data):
@@ -48,10 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
         return user
-
-    def create_otp_device(self, user):
-        device = EmailDevice.objects.create(user=user, email=user.email)
-        device.generate_challenge()
 
 
 class RegistrationSerializer(UserSerializer):
