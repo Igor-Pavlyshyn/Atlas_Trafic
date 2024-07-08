@@ -179,5 +179,5 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "https://atlas-trafic-frontend.vercel.app/"
+    "CORS_ORIGIN_WHITELIST"
 ]
