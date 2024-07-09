@@ -25,9 +25,11 @@ load_dotenv(find_dotenv())
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "") != "False"
 
 ALLOWED_HOSTS = ["127.0.0.1", "atlas-trafic.onrender.com"]
+
+PORT = os.environ.get('PORT', 8000)
 
 # Application definition
 
@@ -59,7 +61,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_otp.middleware.OTPMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
 ]
 
 ROOT_URLCONF = "Atlas_Trafic_API.urls"
@@ -177,6 +178,8 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=14),
 }
 
+CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
     "https://atlas-trafic-frontend.vercel.app"
 ]
+CORS_ALLOW_CREDENTIALS = True
