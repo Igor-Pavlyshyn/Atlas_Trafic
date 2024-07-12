@@ -28,16 +28,16 @@ class Safety(models.Model):
 
     def update_safety(self, data) -> None:
         if data.get("accident_rate"):
-            self.accident_rate = data["accident_rate"] * 20
+            self.accident_rate += data["accident_rate"] * 20
 
         if data.get("near_misses"):
-            self.near_misses = data["near_misses"]
+            self.near_misses += data["near_misses"]
 
         if data.get("speeding"):
-            self.speeding = data["speeding"] * 0.1
+            self.speeding += data["speeding"] * 0.1
 
         traffic_violations = data.get("traffic_violations", {})
-        self.traffic_violations = (
+        self.traffic_violations += (
                 traffic_violations.get("tailgating", 0) * 0.25 +
                 traffic_violations.get("red_light_running", 0) * 0.25 +
                 traffic_violations.get("distracted_driving", 0) * 0.25 +
@@ -45,14 +45,14 @@ class Safety(models.Model):
         )
 
         pedestrian_incidents = data.get("pedestrian_incidents", {})
-        self.pedestrian_incidents = (
+        self.pedestrian_incidents += (
                 pedestrian_incidents.get("no_crosswalk_sign", 0) * 0.25 +
                 pedestrian_incidents.get("near_miss", 0) * 0.25 +
                 pedestrian_incidents.get("aggressive_behavior", 0) * 0.25
         )
 
         damaged_disabled_vehicle = data.get("damaged_disabled_vehicle", {})
-        self.damaged_disabled_vehicle = (
+        self.damaged_disabled_vehicle += (
                 damaged_disabled_vehicle.get("stuck_in_lane", 0) * 5 +
                 damaged_disabled_vehicle.get("broken_down_intersection", 0) * 5 +
                 damaged_disabled_vehicle.get("broken_down_side", 0) * 5
@@ -89,3 +89,81 @@ class Safety(models.Model):
 
     def __str__(self) -> str:
         return f"{self.intersection.intersection_id} - Safety Score: {self.calculate_safety_score()}"
+
+
+class Efficiency(models.Model):
+    intersection = models.ForeignKey(
+        Intersection, on_delete=models.CASCADE, related_name="efficiency_scores"
+    )
+    points = models.FloatField(default=120)
+    congestion_level = models.FloatField(default=0)
+    average_traffic_speed = models.FloatField(default=0)
+    traffic_volume = models.FloatField(default=0)
+    signal_timing_efficiency = models.FloatField(default=0)
+    pedestrian_wait_time = models.FloatField(default=0)
+    micro_mobility_wait_time = models.FloatField(default=0)
+
+    def update_efficiency(self, data, is_school_hours=False, is_near_school=False) -> None:
+        if data.get("congestion_level") and data["congestion_level"] >= 50:
+            self.congestion_level += 1
+
+        average_traffic_speed_data = data.get("average_traffic_speed", {})
+        avg_speed = average_traffic_speed_data.get("avg_speed")
+        min_speed_limit = average_traffic_speed_data.get("min_speed_limit")
+        max_speed_limit = average_traffic_speed_data.get("max_speed_limit")
+
+        if avg_speed is not None and min_speed_limit is not None and max_speed_limit is not None:
+            if avg_speed <= (min_speed_limit - 8) or avg_speed >= (max_speed_limit + 8):
+                self.average_traffic_speed += 1
+
+        if data.get("traffic_volume") and data["traffic_volume"] >= 2000:
+            self.traffic_volume += 1
+
+        if data.get("signal_timing_efficiency") and data["signal_timing_efficiency"] >= 40:
+            self.signal_timing_efficiency += 0.25
+
+        if data.get("pedestrian_wait_time"):
+            if not is_school_hours and data["pedestrian_wait_time"] >= 60:
+                self.pedestrian_wait_time += 0.5
+            elif is_school_hours and is_near_school and data["pedestrian_wait_time"] >= 30:
+                self.pedestrian_wait_time += 0.5
+
+        if data.get("micro_mobility_wait_time"):
+            if not is_school_hours and data["micro_mobility_wait_time"] >= 60:
+                self.micro_mobility_wait_time += 0.5
+            elif is_school_hours and is_near_school and data["micro_mobility_wait_time"] >= 30:
+                self.micro_mobility_wait_time += 0.5
+
+        self.save()
+        self.calculate_efficiency_score()
+
+    def calculate_efficiency_score(self) -> float:
+        points_deducted = (
+            self.congestion_level
+            + self.average_traffic_speed
+            + self.traffic_volume
+            + self.signal_timing_efficiency
+            + self.pedestrian_wait_time
+            + self.micro_mobility_wait_time
+        )
+        self.points = max(0, 120 - points_deducted)
+        self.save()
+        return self.points
+
+    def get_efficiency_grade(self) -> str:
+        score = self.points
+        if score >= 100:
+            return "A"
+        elif score >= 80:
+            return "B"
+        elif score >= 60:
+            return "C"
+        elif score >= 40:
+            return "D"
+        else:
+            return "F"
+
+    def __str__(self) -> str:
+        return f"{self.intersection.intersection_id} - Efficiency Score: {self.calculate_efficiency_score()}"
+
+
