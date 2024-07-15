@@ -52,7 +52,7 @@ class LoginView(generics.GenericAPIView):
                 device = EmailDevice.objects.create(user=user, email=user.email)
             device.generate_challenge()
             return Response(
-                {"detail": "OTP sent to your email"}, status=status.HTTP_200_OK
+                {"otp": ["OTP sent to your email"]}, status=status.HTTP_200_OK
             )
 
         if (
@@ -126,7 +126,7 @@ class VerifyOTPView(generics.GenericAPIView):
                 }
             )
         return Response(
-            {"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+            {"otp": ["Invalid OTP"]}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -151,7 +151,7 @@ class ResetPasswordView(generics.GenericAPIView):
                 {"detail": "Password reset successful"}, status=status.HTTP_200_OK
             )
         return Response(
-            {"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+            {"otp": ["Invalid OTP"]}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -169,5 +169,5 @@ class SendOTPView(generics.GenericAPIView):
             device = EmailDevice.objects.create(user=user, email=user.email)
         device.generate_challenge()
         return Response(
-            {"detail": "OTP sent to your email"}, status=status.HTTP_200_OK
+            {"otp": ["OTP sent to your email"]}, status=status.HTTP_200_OK
         )
