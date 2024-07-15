@@ -1,30 +1,24 @@
 from django.urls import path
 from .views import (
-    IntersectionSafetyView,
+    IntersectionView,
     IntersectionCreateView,
-    IntersectionEventSafetyView,
-    SafetyView
+    IntersectionEventUpdateView,
 )
 
 urlpatterns = [
-    path(
-        "intersections/<str:intersection_id>/safety/",
-        IntersectionSafetyView.as_view(),
-        name="intersection-safety",
-    ),
     path(
         "intersections/create/",
         IntersectionCreateView.as_view(),
         name="intersection-create",
     ),
     path(
-        "intersections/<str:intersection_id>/events/",
-        IntersectionEventSafetyView.as_view(),
-        name="intersection-event-update",
+        "intersections/<str:intersection_id>/",
+        IntersectionView.as_view(),
+        name="intersection-safety",
     ),
     path(
-        "safety/<str:intersection_id>/",
-        SafetyView.as_view(),
-        name="safety",
+        "intersections/<str:intersection_id>/events/",
+        IntersectionEventUpdateView.as_view(),
+        name="intersection-event-update",
     )
 ]
