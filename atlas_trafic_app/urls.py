@@ -7,14 +7,14 @@ from .views import (
 
 urlpatterns = [
     path(
+        "intersections/<int:intersection_id>/",
+        IntersectionView.as_view(),
+        name="intersection-detail",
+    ),
+    path(
         "intersections/create/",
         IntersectionCreateView.as_view(),
         name="intersection-create",
-    ),
-    path(
-        "intersections/<str:intersection_id>/",
-        IntersectionView.as_view(),
-        name="intersection-safety",
     ),
     path(
         "intersections/<str:intersection_id>/events/",
