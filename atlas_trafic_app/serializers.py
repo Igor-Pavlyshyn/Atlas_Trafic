@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Intersection, Safety, Efficiency
+from .models import Intersection, Safety, Efficiency, Environmental
 
 
 class SafetySerializer(serializers.ModelSerializer):
@@ -13,19 +13,28 @@ class SafetySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Safety
-        fields = "__all__"
+        fields = (
+            "id",
+            "points",
+            "accident_rate",
+            "near_misses",
+            "speeding",
+            "traffic_violations",
+            "pedestrian_incidents",
+            "damaged_disabled_vehicle",
+        )
 
     def get_points(self, obj):
         return obj.get_safety_grade()
 
     def get_total(self, obj):
         return (
-                obj.accident_rate
-                + obj.near_misses
-                + obj.speeding
-                + obj.traffic_violations
-                + obj.pedestrian_incidents
-                + obj.damaged_disabled_vehicle
+            obj.accident_rate
+            + obj.near_misses
+            + obj.speeding
+            + obj.traffic_violations
+            + obj.pedestrian_incidents
+            + obj.damaged_disabled_vehicle
         )
 
     def get_percentage(self, value, total):
@@ -69,7 +78,16 @@ class EfficiencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Efficiency
-        fields = "__all__"
+        fields = (
+            "id",
+            "points",
+            "congestion_level",
+            "average_traffic_speed",
+            "traffic_volume",
+            "signal_timing_efficiency",
+            "pedestrian_wait_time",
+            "micro_mobility_wait_time",
+        )
 
     def get_points(self, obj):
         return obj.get_efficiency_grade()
@@ -114,9 +132,69 @@ class EfficiencySerializer(serializers.ModelSerializer):
         return self.get_percentage(obj.micro_mobility_wait_time, total)
 
 
+class EnvironmentalSerializer(serializers.ModelSerializer):
+    points = serializers.SerializerMethodField()
+    vehicle_emissions = serializers.SerializerMethodField()
+    fuel_consumption = serializers.SerializerMethodField()
+    noise_pollution = serializers.SerializerMethodField()
+    air_quality_index = serializers.SerializerMethodField()
+    driving_conditions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Environmental
+        fields = (
+            "id",
+            "points",
+            "vehicle_emissions",
+            "fuel_consumption",
+            "noise_pollution",
+            "air_quality_index",
+            "driving_conditions",
+        )
+
+    def get_points(self, obj):
+        return obj.get_environmental_grade()
+
+    def get_total(self, obj):
+        return (
+            obj.vehicle_emissions
+            + obj.fuel_consumption
+            + obj.noise_pollution
+            + obj.air_quality_index
+            + obj.driving_conditions
+            + obj.fire_detection
+        )
+
+    def get_percentage(self, value, total):
+        if total > 0:
+            return round((value / total) * 100, 2)
+        return 0
+
+    def get_vehicle_emissions(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.vehicle_emissions, total)
+
+    def get_fuel_consumption(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.fuel_consumption, total)
+
+    def get_noise_pollution(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.noise_pollution, total)
+
+    def get_air_quality_index(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.air_quality_index, total)
+
+    def get_driving_conditions(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.driving_conditions, total)
+
+
 class IntersectionSerializer(serializers.ModelSerializer):
     safety_scores = SafetySerializer(many=True, read_only=True)
     efficiency_scores = EfficiencySerializer(many=True, read_only=True)
+    environmental_scores = EnvironmentalSerializer(many=True, read_only=True)
 
     class Meta:
         model = Intersection
@@ -127,6 +205,7 @@ class IntersectionSerializer(serializers.ModelSerializer):
             "condition",
             "safety_scores",
             "efficiency_scores",
+            "environmental_scores",
         )
 
 
