@@ -234,3 +234,30 @@ class Environmental(models.Model):
 
     def __str__(self) -> str:
         return f"{self.intersection.intersection_id} - Environmental Score: {self.calculate_environmental_score()}"
+
+
+class Car(models.Model):
+    PASSENGER_VEHICLE = 'PV'
+    HEAVY_TRUCK = 'HT'
+    PUBLIC_TRANSPORTATION = 'PT'
+    PEDESTRIAN = 'PD'
+    MICROMOBILITY_USER = 'MU'
+
+    CLASSIFICATION_CHOICES = [
+        (PASSENGER_VEHICLE, 'Passenger Vehicle'),
+        (HEAVY_TRUCK, 'Heavy Truck'),
+        (PUBLIC_TRANSPORTATION, 'Public Transportation'),
+        (PEDESTRIAN, 'Pedestrian'),
+        (MICROMOBILITY_USER, 'Micromobility User'),
+    ]
+
+    classification_type = models.CharField(
+        max_length=2,
+        choices=CLASSIFICATION_CHOICES,
+        default=PASSENGER_VEHICLE,
+    )
+    intersection = models.ForeignKey(
+        'Intersection',  # Assuming the Intersection model is in the same app
+        on_delete=models.CASCADE,
+        related_name='cars'
+    )
