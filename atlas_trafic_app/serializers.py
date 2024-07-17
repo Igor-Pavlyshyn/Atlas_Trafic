@@ -190,7 +190,7 @@ class EnvironmentalSerializer(serializers.ModelSerializer):
         total = self.get_total(obj)
         return self.get_percentage(obj.driving_conditions, total)
 
-
+      
 class IntersectionSerializer(serializers.ModelSerializer):
     safety_scores = SafetySerializer(many=True, read_only=True)
     efficiency_scores = EfficiencySerializer(many=True, read_only=True)
