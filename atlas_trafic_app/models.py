@@ -177,7 +177,7 @@ class Environmental(models.Model):
     noise_pollution = models.FloatField(default=0)
     air_quality_index = models.FloatField(default=0)
     driving_conditions = models.FloatField(default=0)
-    fire_detection = models.BooleanField(default=False)
+    fire_detection = models.FloatField(default=0)
 
     def update_environmental(self, data) -> None:
         if data.get("vehicle_emissions") and data["vehicle_emissions"] > 30:  # 30 seconds
@@ -202,7 +202,7 @@ class Environmental(models.Model):
                 self.driving_conditions += 1
 
         if data.get("fire_detection"):
-            self.fire_detection = True
+            self.fire_detection += data["fire_detection"]
         self.save()
         self.calculate_environmental_score()
 

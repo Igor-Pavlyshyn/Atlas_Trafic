@@ -36,6 +36,7 @@ class IntersectionEventUpdateView(APIView):
         safety.update_safety(request.data)
 
         efficiency, _ = Efficiency.objects.get_or_create(intersection=intersection)
+
         is_school_hours = request.data.get("is_school_hours", False)
         is_near_school = request.data.get("is_near_school", False)
         efficiency.update_efficiency(
