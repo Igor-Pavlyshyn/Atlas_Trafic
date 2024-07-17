@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from atlas_trafic_app.models import Safety, Efficiency
+from atlas_trafic_app.models import Safety, Efficiency, Environmental
 
 
 class Command(BaseCommand):
@@ -23,6 +23,15 @@ class Command(BaseCommand):
             signal_timing_efficiency=0,
             pedestrian_wait_time=0,
             micro_mobility_wait_time=0
+        )
+        Environmental.objects.update(
+            points=120,
+            vehicle_emissions=0,
+            fuel_consumption=0,
+            noise_pollution=0,
+            air_quality_index=0,
+            driving_conditions=0,
+            fire_detection=0
         )
 
         print("Score data has been reset")
