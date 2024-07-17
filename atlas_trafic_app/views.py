@@ -2,8 +2,14 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Intersection, Safety, Efficiency
-from .serializers import SafetySerializer, IntersectionSerializer, EfficiencySerializer, IntersectionCreateSerializer
+from .models import Intersection, Safety, Efficiency, Environmental
+from .serializers import (
+    SafetySerializer,
+    IntersectionSerializer,
+    EfficiencySerializer,
+    IntersectionCreateSerializer,
+    EnvironmentalSerializer,
+)
 
 
 class IntersectionCreateView(generics.CreateAPIView):
@@ -29,9 +35,7 @@ class IntersectionEventUpdateView(APIView):
         safety, _ = Safety.objects.get_or_create(intersection=intersection)
         safety.update_safety(request.data)
 
-        efficiency, _ = Efficiency.objects.get_or_create(
-            intersection=intersection
-        )
+        efficiency, _ = Efficiency.objects.get_or_create(intersection=intersection)
         is_school_hours = request.data.get("is_school_hours", False)
         is_near_school = request.data.get("is_near_school", False)
         efficiency.update_efficiency(
@@ -40,12 +44,17 @@ class IntersectionEventUpdateView(APIView):
             is_near_school
         )
 
-        efficiency_serializer = EfficiencySerializer(efficiency)
+        environmental, _ = Environmental.objects.get_or_create(intersection=intersection)
+        environmental.update_environmental(request.data)
+
         safety_serializer = SafetySerializer(safety)
+        efficiency_serializer = EfficiencySerializer(efficiency)
+        environmental_serializer = EnvironmentalSerializer(environmental)
         return Response(
             {
-                "efficiency": efficiency_serializer.data,
                 "safety": safety_serializer.data,
+                "efficiency": efficiency_serializer.data,
+                "environmental": environmental_serializer.data,
             },
             status=status.HTTP_200_OK,
         )

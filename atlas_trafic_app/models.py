@@ -167,3 +167,70 @@ class Efficiency(models.Model):
         return f"{self.intersection.intersection_id} - Efficiency Score: {self.calculate_efficiency_score()}"
 
 
+class Environmental(models.Model):
+    intersection = models.ForeignKey(
+        Intersection, on_delete=models.CASCADE, related_name="environmental_scores"
+    )
+    points = models.FloatField(default=120)
+    vehicle_emissions = models.FloatField(default=0)
+    fuel_consumption = models.FloatField(default=0)
+    noise_pollution = models.FloatField(default=0)
+    air_quality_index = models.FloatField(default=0)
+    driving_conditions = models.FloatField(default=0)
+    fire_detection = models.BooleanField(default=False)
+
+    def update_environmental(self, data) -> None:
+        if data.get("vehicle_emissions") and data["vehicle_emissions"] > 30:  # 30 seconds
+            self.vehicle_emissions += 0.2
+
+        if data.get("fuel_consumption") and data["fuel_consumption"] > 30:  # 30 seconds
+            self.fuel_consumption += 0.2
+
+        if data.get("noise_pollution") and data["noise_pollution"] > 75:  # 75 decibels
+            self.noise_pollution += 0.5
+
+        if data.get("air_quality_index") and data["air_quality_index"] > 100:  # 100 per one hour
+            self.air_quality_index += 5
+
+        driving_conditions = data.get("driving_conditions", {})
+        visibility = driving_conditions.get("visibility")
+        weather = driving_conditions.get("weather")
+        if visibility is not None and weather is not None:
+            if visibility < 0.5:  # 0.5 miles
+                self.driving_conditions += 1
+            if weather in ["rain", "dust storm", "snow"]:
+                self.driving_conditions += 1
+
+        if data.get("fire_detection"):
+            self.fire_detection = True
+        self.save()
+        self.calculate_environmental_score()
+
+    def calculate_environmental_score(self) -> float:
+        points_deducted = (
+            self.vehicle_emissions
+            + self.fuel_consumption
+            + self.noise_pollution
+            + self.air_quality_index
+            + self.driving_conditions
+            + self.fire_detection
+        )
+        self.points = max(0, 120 - points_deducted)
+        self.save()
+        return self.points
+
+    def get_environmental_grade(self) -> str:
+        score = self.points
+        if score >= 100:
+            return "A"
+        elif score >= 80:
+            return "B"
+        elif score >= 60:
+            return "C"
+        elif score >= 40:
+            return "D"
+        else:
+            return "F"
+
+    def __str__(self) -> str:
+        return f"{self.intersection.intersection_id} - Environmental Score: {self.calculate_environmental_score()}"
