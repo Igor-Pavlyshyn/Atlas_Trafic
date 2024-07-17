@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from .models import Intersection, Safety, Efficiency, Environmental
 from .serializers import (
     SafetySerializer,
@@ -13,17 +14,21 @@ from .serializers import (
 
 
 class IntersectionCreateView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Intersection.objects.all()
     serializer_class = IntersectionCreateSerializer
 
 
 class IntersectionView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Intersection.objects.all()
     serializer_class = IntersectionSerializer
     lookup_field = "intersection_id"
 
 
 class IntersectionEventUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, intersection_id):
         try:
             intersection = Intersection.objects.get(intersection_id=intersection_id)
