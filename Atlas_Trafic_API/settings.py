@@ -180,7 +180,7 @@ SIMPLE_JWT = {
 
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
-    "http://localhost:5173/",
+    "http://localhost:5173",
     "https://atlas-trafic-frontend.vercel.app"
 ]
 CORS_ALLOW_CREDENTIALS = True
