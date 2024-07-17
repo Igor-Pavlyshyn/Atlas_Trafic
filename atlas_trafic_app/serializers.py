@@ -139,6 +139,7 @@ class EnvironmentalSerializer(serializers.ModelSerializer):
     noise_pollution = serializers.SerializerMethodField()
     air_quality_index = serializers.SerializerMethodField()
     driving_conditions = serializers.SerializerMethodField()
+    fire_detection = serializers.SerializerMethodField()
 
     class Meta:
         model = Environmental
@@ -150,6 +151,7 @@ class EnvironmentalSerializer(serializers.ModelSerializer):
             "noise_pollution",
             "air_quality_index",
             "driving_conditions",
+            "fire_detection",
         )
 
     def get_points(self, obj):
@@ -189,6 +191,10 @@ class EnvironmentalSerializer(serializers.ModelSerializer):
     def get_driving_conditions(self, obj):
         total = self.get_total(obj)
         return self.get_percentage(obj.driving_conditions, total)
+
+    def get_fire_detection(self, obj):
+        total = self.get_total(obj)
+        return self.get_percentage(obj.fire_detection, total)
 
       
 class IntersectionSerializer(serializers.ModelSerializer):
