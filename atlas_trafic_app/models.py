@@ -38,24 +38,24 @@ class Safety(models.Model):
 
         traffic_violations = data.get("traffic_violations", {})
         self.traffic_violations += (
-                traffic_violations.get("tailgating", 0) * 0.25 +
-                traffic_violations.get("red_light_running", 0) * 0.25 +
-                traffic_violations.get("distracted_driving", 0) * 0.25 +
-                traffic_violations.get("changing_lanes", 0) * 0.25
+            traffic_violations.get("tailgating", 0) * 0.25
+            + traffic_violations.get("red_light_running", 0) * 0.25
+            + traffic_violations.get("distracted_driving", 0) * 0.25
+            + traffic_violations.get("changing_lanes", 0) * 0.25
         )
 
         pedestrian_incidents = data.get("pedestrian_incidents", {})
         self.pedestrian_incidents += (
-                pedestrian_incidents.get("no_crosswalk_sign", 0) * 0.25 +
-                pedestrian_incidents.get("near_miss", 0) * 0.25 +
-                pedestrian_incidents.get("aggressive_behavior", 0) * 0.25
+            pedestrian_incidents.get("no_crosswalk_sign", 0) * 0.25
+            + pedestrian_incidents.get("near_miss", 0) * 0.25
+            + pedestrian_incidents.get("aggressive_behavior", 0) * 0.25
         )
 
         damaged_disabled_vehicle = data.get("damaged_disabled_vehicle", {})
         self.damaged_disabled_vehicle += (
-                damaged_disabled_vehicle.get("stuck_in_lane", 0) * 5 +
-                damaged_disabled_vehicle.get("broken_down_intersection", 0) * 5 +
-                damaged_disabled_vehicle.get("broken_down_side", 0) * 5
+            damaged_disabled_vehicle.get("stuck_in_lane", 0) * 5
+            + damaged_disabled_vehicle.get("broken_down_intersection", 0) * 5
+            + damaged_disabled_vehicle.get("broken_down_side", 0) * 5
         )
 
         self.save()
@@ -103,7 +103,9 @@ class Efficiency(models.Model):
     pedestrian_wait_time = models.FloatField(default=0)
     micro_mobility_wait_time = models.FloatField(default=0)
 
-    def update_efficiency(self, data, is_school_hours=False, is_near_school=False) -> None:
+    def update_efficiency(
+        self, data, is_school_hours=False, is_near_school=False
+    ) -> None:
         if data.get("congestion_level") and data["congestion_level"] >= 50:
             self.congestion_level += 1
 
@@ -112,26 +114,41 @@ class Efficiency(models.Model):
         min_speed_limit = average_traffic_speed_data.get("min_speed_limit")
         max_speed_limit = average_traffic_speed_data.get("max_speed_limit")
 
-        if avg_speed is not None and min_speed_limit is not None and max_speed_limit is not None:
+        if (
+            avg_speed is not None
+            and min_speed_limit is not None
+            and max_speed_limit is not None
+        ):
             if avg_speed <= (min_speed_limit - 8) or avg_speed >= (max_speed_limit + 8):
                 self.average_traffic_speed += 1
 
         if data.get("traffic_volume") and data["traffic_volume"] >= 2000:
             self.traffic_volume += 1
 
-        if data.get("signal_timing_efficiency") and data["signal_timing_efficiency"] >= 40:
+        if (
+            data.get("signal_timing_efficiency")
+            and data["signal_timing_efficiency"] >= 40
+        ):
             self.signal_timing_efficiency += 0.25
 
         if data.get("pedestrian_wait_time"):
             if not is_school_hours and data["pedestrian_wait_time"] >= 60:
                 self.pedestrian_wait_time += 0.5
-            elif is_school_hours and is_near_school and data["pedestrian_wait_time"] >= 30:
+            elif (
+                is_school_hours
+                and is_near_school
+                and data["pedestrian_wait_time"] >= 30
+            ):
                 self.pedestrian_wait_time += 0.5
 
         if data.get("micro_mobility_wait_time"):
             if not is_school_hours and data["micro_mobility_wait_time"] >= 60:
                 self.micro_mobility_wait_time += 0.5
-            elif is_school_hours and is_near_school and data["micro_mobility_wait_time"] >= 30:
+            elif (
+                is_school_hours
+                and is_near_school
+                and data["micro_mobility_wait_time"] >= 30
+            ):
                 self.micro_mobility_wait_time += 0.5
 
         self.save()
@@ -180,7 +197,9 @@ class Environmental(models.Model):
     fire_detection = models.FloatField(default=0)
 
     def update_environmental(self, data) -> None:
-        if data.get("vehicle_emissions") and data["vehicle_emissions"] > 30:  # 30 seconds
+        if (
+            data.get("vehicle_emissions") and data["vehicle_emissions"] > 30
+        ):  # 30 seconds
             self.vehicle_emissions += 0.2
 
         if data.get("fuel_consumption") and data["fuel_consumption"] > 30:  # 30 seconds
@@ -189,7 +208,9 @@ class Environmental(models.Model):
         if data.get("noise_pollution") and data["noise_pollution"] > 75:  # 75 decibels
             self.noise_pollution += 0.5
 
-        if data.get("air_quality_index") and data["air_quality_index"] > 100:  # 100 per one hour
+        if (
+            data.get("air_quality_index") and data["air_quality_index"] > 100
+        ):  # 100 per one hour
             self.air_quality_index += 5
 
         driving_conditions = data.get("driving_conditions", {})
@@ -237,27 +258,20 @@ class Environmental(models.Model):
 
 
 class Car(models.Model):
-    PASSENGER_VEHICLE = 'PV'
-    HEAVY_TRUCK = 'HT'
-    PUBLIC_TRANSPORTATION = 'PT'
-    PEDESTRIAN = 'PD'
-    MICROMOBILITY_USER = 'MU'
-
     CLASSIFICATION_CHOICES = [
-        (PASSENGER_VEHICLE, 'Passenger Vehicle'),
-        (HEAVY_TRUCK, 'Heavy Truck'),
-        (PUBLIC_TRANSPORTATION, 'Public Transportation'),
-        (PEDESTRIAN, 'Pedestrian'),
-        (MICROMOBILITY_USER, 'Micromobility User'),
+        ("Passenger Vehicle", "Passenger Vehicle"),
+        ("Heavy Truck", "Heavy Truck"),
+        ("Public Transportation", "Public Transportation"),
+        ("Pedestrian", "Pedestrian"),
+        ("Micromobility User", "Micromobility User"),
     ]
 
-    classification_type = models.CharField(
-        max_length=2,
-        choices=CLASSIFICATION_CHOICES,
-        default=PASSENGER_VEHICLE,
-    )
     intersection = models.ForeignKey(
-        'Intersection',  # Assuming the Intersection model is in the same app
-        on_delete=models.CASCADE,
-        related_name='cars'
+        Intersection, on_delete=models.CASCADE, related_name="cars"
     )
+    classification = models.CharField(max_length=50, choices=CLASSIFICATION_CHOICES)
+    detected_at = models.DateTimeField(auto_now_add=True)
+    count = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.classification} at {self.intersection}"
