@@ -3,6 +3,8 @@ from .views import (
     IntersectionView,
     IntersectionCreateView,
     IntersectionEventUpdateView,
+    IntersectionCarCreateView,
+    IntersectionCarView
 )
 
 urlpatterns = [
@@ -20,5 +22,15 @@ urlpatterns = [
         "intersections/<str:intersection_id>/events/",
         IntersectionEventUpdateView.as_view(),
         name="intersection-event-update",
+    ),
+    path(
+        "intersections/<int:intersection_id>/cars/",
+        IntersectionCarCreateView.as_view(),
+        name="intersection-cars",
+    ),
+    path(
+        "intersections/<int:intersection_id>/cars/1/",
+        IntersectionCarView.as_view(),
+        name="intersection-car-detail",
     )
 ]
