@@ -111,34 +111,59 @@ class IntersectionCarCreateView(APIView):
         return Response(car_input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class IntersectionCarView(APIView):
+#     def get(self, request, intersection_id):
+#         try:
+#             intersection = Intersection.objects.get(intersection_id=intersection_id)
+#         except Intersection.DoesNotExist:
+#             return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+#         car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
+#         if car_data_modifier == 1:
+#             start_time = time(0, 0)  # 12:00 AM
+#             end_time = time(12, 0)  # 12:00 PM
+#         elif car_data_modifier == 2:
+#             start_time = time(12, 0)  # 12:00 PM
+#             end_time = time(23, 59)  # 11:59 PM
+#         else:
+#             return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
+#         if not cars.exists():
+#             return Response({"error": "No car data found for this intersection in the specified time range"},
+#                             status=status.HTTP_404_NOT_FOUND)
+#         total_cars = cars.aggregate(total=Sum('count'))['total']
+#         classifications = cars.values('classification').annotate(count=Sum('count'))
+#         detected_at = cars.latest('detected_at').detected_at
+#         classification_counts = {entry['classification']: entry['count'] for entry in classifications}
+#         response_data = {
+#             "total_cars": total_cars,
+#             "classifications": classification_counts,
+#             "detected_at": f"from {start_time} to {end_time}",
+#         }
+#         return Response(response_data, status=status.HTTP_200_OK)
+
 class IntersectionCarView(APIView):
     def get(self, request, intersection_id):
         try:
             intersection = Intersection.objects.get(intersection_id=intersection_id)
         except Intersection.DoesNotExist:
             return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
-        car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
-        if car_data_modifier == 1:
-            start_time = time(0, 0)  # 12:00 AM
-            end_time = time(12, 0)  # 12:00 PM
-        elif car_data_modifier == 2:
-            start_time = time(12, 0)  # 12:00 PM
-            end_time = time(23, 59)  # 11:59 PM
-        else:
-            return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
+            # Initialize the hourly counts
+            # Initialize the hourly counts for chart1 to chart11
+        hourly_counts = {f'chart{chart_num}': 0 for chart_num in range(1, 12)}  # From chart1 to chart11
 
-        cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
-        if not cars.exists():
-            return Response({"error": "No car data found for this intersection in the specified time range"},
-                            status=status.HTTP_404_NOT_FOUND)
-        total_cars = cars.aggregate(total=Sum('count'))['total']
-        classifications = cars.values('classification').annotate(count=Sum('count'))
-        detected_at = cars.latest('detected_at').detected_at
-        classification_counts = {entry['classification']: entry['count'] for entry in classifications}
+        # Filter and count cars for each hour in the 11-hour timeframe (12 PM to 11 PM)
+        for hour, chart_num in zip(range(12, 23), range(1, 12)):
+            start_time = time(hour, 0)
+            end_time = time(hour + 1, 0)
+            count = Car.objects.filter(
+                intersection=intersection,
+                detected_at__time__gte=start_time,
+                detected_at__time__lt=end_time
+            ).aggregate(count=Sum('count'))['count']
+            hourly_counts[f'chart{chart_num}'] = count if count else 0
+
         response_data = {
-            "total_cars": total_cars,
-            "classifications": classification_counts,
-            "detected_at": f"from {start_time} to {end_time}",
+            "hourly_counts": hourly_counts
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
