@@ -32,5 +32,10 @@ urlpatterns = [
         "intersections/<int:intersection_id>/cars/1/",
         IntersectionCarView.as_view(),
         name="intersection-car-detail",
+    ),
+    path(
+        "intersections/<int:intersection_id>/cars/2/",
+        IntersectionCarView.as_view(),
+        name="intersection-car-detail-2",
     )
 ]

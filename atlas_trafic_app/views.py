@@ -113,9 +113,16 @@ class IntersectionCarView(APIView):
             intersection = Intersection.objects.get(intersection_id=intersection_id)
         except Intersection.DoesNotExist:
             return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
-        # order by 12 am to 12 pm
-        start_time = time(11, 47)  # 12:00 AM
-        end_time = time(13, 0)  # 12:00 PM
+        car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
+        if car_data_modifier == 1:
+            start_time = time(0, 0)  # 12:00 AM
+            end_time = time(12, 0)  # 12:00 PM
+        elif car_data_modifier == 2:
+            start_time = time(12, 0)  # 12:00 PM
+            end_time = time(23, 59)  # 11:59 PM
+        else:
+            return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
+
         cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
         if not cars.exists():
             return Response({"error": "No car data found for this intersection in the specified time range"},
@@ -127,7 +134,7 @@ class IntersectionCarView(APIView):
         response_data = {
             "total_cars": total_cars,
             "classifications": classification_counts,
-            "detected_at": detected_at,
+            "detected_at": f"from {start_time} to {end_time}",
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
