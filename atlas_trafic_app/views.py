@@ -158,8 +158,20 @@ class IntersectionCarView(APIView):
                 detected_at__time__lt=end_time
             ).aggregate(count=Sum('count'))['count']
             hourly_counts[f'chart{chart_num}'] = count if count else 0
+        car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
+        if car_data_modifier == 1:
+            start_time = time(0, 0)  # 12:00 AM
+            end_time = time(12, 0)  # 12:00 PM
+        elif car_data_modifier == 2:
+            start_time = time(12, 0)  # 12:00 PM
+            end_time = time(23, 59)  # 11:59 PM
+        else:
+            return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
+        cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
+        total_cars = cars.aggregate(total=Sum('count'))['total']
 
         response_data = {
-            "hourly_counts": hourly_counts
+            "hourly_counts": hourly_counts,
+            "total_cars": total_cars
         }
         return Response(response_data, status=status.HTTP_200_OK)
