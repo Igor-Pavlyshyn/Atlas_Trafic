@@ -175,3 +175,15 @@ class IntersectionCarView(APIView):
             "total_cars": total_cars
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class IntersectionClassificationView(APIView):
+    def get(self, request, intersection_id):
+        try:
+            intersection = Intersection.objects.get(intersection_id=intersection_id)
+        except Intersection.DoesNotExist:
+            return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+        cars = Car.objects.filter(intersection=intersection)
+        classifications = cars.values('classification').annotate(count=Sum('count'))
+        classification_counts = {entry['classification']: entry['count'] for entry in classifications}
+        return Response(classification_counts, status=status.HTTP_200_OK)
