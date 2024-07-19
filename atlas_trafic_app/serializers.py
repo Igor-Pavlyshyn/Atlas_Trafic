@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Intersection, Safety, Efficiency, Environmental
+from .models import Intersection, Safety, Efficiency, Environmental, Car
 
 
 class SafetySerializer(serializers.ModelSerializer):
@@ -196,7 +196,7 @@ class EnvironmentalSerializer(serializers.ModelSerializer):
         total = self.get_total(obj)
         return self.get_percentage(obj.fire_detection, total)
 
-      
+
 class IntersectionSerializer(serializers.ModelSerializer):
     safety_scores = SafetySerializer(many=True, read_only=True)
     efficiency_scores = EfficiencySerializer(many=True, read_only=True)
@@ -224,3 +224,23 @@ class IntersectionCreateSerializer(serializers.ModelSerializer):
             "coordinates",
             "condition",
         )
+
+
+class CarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Car
+        fields = ["classification", "count", "detected_at"]
+
+
+class IntersectionCarInputSerializer(serializers.Serializer):
+    Passenger_Vehicle = serializers.IntegerField(required=False, default=0)
+    Heavy_Truck = serializers.IntegerField(required=False, default=0)
+    Public_Transportation = serializers.IntegerField(required=False, default=0)
+    Pedestrian = serializers.IntegerField(required=False, default=0)
+    Micromobility_User = serializers.IntegerField(required=False, default=0)
+
+
+class IntersectionCarResponseSerializer(serializers.Serializer):
+    total_cars = serializers.IntegerField()
+    classifications = serializers.DictField(child=serializers.IntegerField())
+    detected_at = serializers.DateTimeField()
