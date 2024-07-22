@@ -271,7 +271,7 @@ class Car(models.Model):
     )
     classification = models.CharField(max_length=50, choices=CLASSIFICATION_CHOICES)
     detected_at = models.DateTimeField(auto_now_add=True)
-    count = models.PositiveIntegerField(default=1)
+    count = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.classification} at {self.intersection}"
