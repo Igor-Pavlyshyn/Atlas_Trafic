@@ -13,5 +13,5 @@ class AtlasTraficAppConfig(AppConfig):
 
     def ready(self):
         scheduler = BackgroundScheduler()
-        scheduler.add_job(reset_score_data, "interval", minutes=60)
+        scheduler.add_job(reset_score_data, "interval", minutes=720)
         scheduler.start()
