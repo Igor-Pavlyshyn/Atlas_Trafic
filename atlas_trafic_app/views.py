@@ -76,6 +76,8 @@ class IntersectionEventUpdateView(APIView):
 
 
 class IntersectionCarCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, intersection_id):
         try:
             intersection = Intersection.objects.get(intersection_id=intersection_id)
@@ -143,39 +145,59 @@ class IntersectionCarCreateView(APIView):
 #         return Response(response_data, status=status.HTTP_200_OK)
 
 class IntersectionCarView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, intersection_id):
         try:
             intersection = Intersection.objects.get(intersection_id=intersection_id)
         except Intersection.DoesNotExist:
             return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
-            # Initialize the hourly counts
-            # Initialize the hourly counts for chart1 to chart11
-        hourly_counts = {f'chart{chart_num}': 0 for chart_num in range(1, 12)}  # From chart1 to chart11
 
-        # Filter and count cars for each hour in the 11-hour timeframe (12 PM to 11 PM)
-        for hour, chart_num in zip(range(12, 23), range(1, 12)):
-            start_time = time(hour, 0)
-            end_time = time(hour + 1, 0)
-            count = Car.objects.filter(
-                intersection=intersection,
-                detected_at__time__gte=start_time,
-                detected_at__time__lt=end_time
-            ).aggregate(count=Sum('count'))['count']
-            hourly_counts[f'chart{chart_num}'] = count if count else 0
         car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
         if car_data_modifier == 1:
             start_time = time(0, 0)  # 12:00 AM
             end_time = time(12, 0)  # 12:00 PM
         elif car_data_modifier == 2:
             start_time = time(12, 0)  # 12:00 PM
-            end_time = time(23, 59)  # 11:59 PM
+            end_time = time(23, 59)  # 12:00 AM
         else:
             return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
-        cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
-        total_cars = cars.aggregate(total=Sum('count'))['total']
+        total_cars = Car.objects.filter(
+            intersection=intersection,
+            detected_at__time__gte=start_time,
+            detected_at__time__lt=end_time
+        ).aggregate(count=Sum('count'))['count']
+
+        hourly_counts = {f'chart{chart_num}': 0 for chart_num in range(1, 13)}  # From chart1 to chart12
+        # Filter and count cars for each hour in the 12-hour timeframe
+        for hour, chart_num in zip(range(start_time.hour, end_time.hour), range(1, 13)):
+            start_time = time(hour, 0)
+            end_time = time(hour + 1, 0)
+            if hour == 23:
+                end_time = time(hour + 1, 59)
+            count = Car.objects.filter(
+                intersection=intersection,
+                detected_at__time__gte=start_time,
+                detected_at__time__lt=end_time
+            ).aggregate(count=Sum('count'))['count']
+            hourly_counts[f'chart{chart_num}'] = count if count else 0
 
         response_data = {
             "hourly_counts": hourly_counts,
             "total_cars": total_cars
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class IntersectionClassificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, intersection_id):
+        try:
+            intersection = Intersection.objects.get(intersection_id=intersection_id)
+        except Intersection.DoesNotExist:
+            return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+        cars = Car.objects.filter(intersection=intersection)
+        classifications = cars.values('classification').annotate(count=Sum('count'))
+        classification_counts = {entry['classification'] for entry in classifications}
+        return Response(classification_counts, status=status.HTTP_200_OK)
