@@ -176,12 +176,12 @@ class IntersectionClassificationDetailView(APIView):
         intersection = get_intersection_by_id(intersection_id)
 
         car_data_modifier = int(
-            request.path.split("/")[-2][-1]
+            request.path.split("/")[-1][-1]
         )  # Get the digit after the last '/' before 'classifications'
         start_time, end_time = self._get_time_range(car_data_modifier)
         total_cars = Car.objects.filter(
             intersection=intersection,
-            classification=classification,
+            classification=classification.replace("_", " "),
             detected_at__time__gte=start_time,
             detected_at__time__lt=end_time,
         ).aggregate(count=Sum("count"))["count"]
@@ -197,7 +197,7 @@ class IntersectionClassificationDetailView(APIView):
                 end_time = time(23, 59)
             count = Car.objects.filter(
                 intersection=intersection,
-                classification=classification,
+                classification=classification.replace("_", " "),
                 detected_at__time__gte=start_time,
                 detected_at__time__lte=end_time,
             ).aggregate(count=Sum("count"))["count"]
