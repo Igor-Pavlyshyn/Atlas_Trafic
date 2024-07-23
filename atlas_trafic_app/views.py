@@ -173,12 +173,12 @@ class IntersectionClassificationView(APIView):
 class IntersectionClassificationDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, intersection_id, classification):
+    def get(self, request, intersection_id, classification, modifier):
         intersection = get_intersection_by_id(intersection_id)
-
-        car_data_modifier = int(
-            request.path.split("/")[-1][-1]
-        )  # Get the digit after the last '/' before 'classifications'
+        try:
+            car_data_modifier = int(modifier)
+        except ValueError:
+            return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
         start_time, end_time = get_time_range(car_data_modifier)
         total_cars = Car.objects.filter(
             intersection=intersection,
