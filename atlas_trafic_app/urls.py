@@ -4,7 +4,9 @@ from .views import (
     IntersectionCreateView,
     IntersectionEventUpdateView,
     IntersectionCarCreateView,
-    IntersectionCarView
+    IntersectionCarView,
+    IntersectionClassificationView,
+    IntersectionClassificationDetailView
 )
 
 urlpatterns = [
@@ -37,5 +39,20 @@ urlpatterns = [
         "intersections/<int:intersection_id>/cars/2/",
         IntersectionCarView.as_view(),
         name="intersection-car-detail-2",
+    ),
+    path(
+        "intersections/<int:intersection_id>/classifications/",
+        IntersectionClassificationView.as_view(),
+        name="intersection-classifications",
+    ),
+    path(
+        "intersections/<int:intersection_id>/classifications/<str:classification>/1",
+        IntersectionClassificationDetailView.as_view(),
+        name="intersection-classification-detail",
+    ),
+    path(
+        "intersections/<int:intersection_id>/classifications/<str:classification>/2",
+        IntersectionClassificationDetailView.as_view(),
+        name="intersection-classification-detail-2",
     )
 ]
