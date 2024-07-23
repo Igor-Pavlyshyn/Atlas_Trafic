@@ -46,12 +46,12 @@ urlpatterns = [
         name="intersection-classifications",
     ),
     path(
-        "intersections/<int:intersection_id>/classifications/<str:classification>/1",
+        "intersections/<int:intersection_id>/classifications/<str:classification>/1/",
         IntersectionClassificationDetailView.as_view(),
         name="intersection-classification-detail",
     ),
     path(
-        "intersections/<int:intersection_id>/classifications/<str:classification>/2",
+        "intersections/<int:intersection_id>/classifications/<str:classification>/2/",
         IntersectionClassificationDetailView.as_view(),
         name="intersection-classification-detail-2",
     )

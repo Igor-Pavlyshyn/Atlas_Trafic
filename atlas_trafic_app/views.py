@@ -20,6 +20,28 @@ from .serializers import (
 )
 
 
+def get_intersection_by_id(intersection_id):
+    try:
+        intersection = Intersection.objects.get(intersection_id=intersection_id)
+    except Intersection.DoesNotExist:
+        return Response(
+            {"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+    return intersection
+
+
+def get_time_range(car_data_modifier):
+    if car_data_modifier == 1:
+        return time(0, 0), time(12, 0)
+    elif car_data_modifier == 2:
+        return time(12, 0), time(23, 59)
+    else:
+        return Response(
+            {"error": "Invalid car data modifier."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 class IntersectionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Intersection.objects.all()
@@ -31,16 +53,6 @@ class IntersectionView(generics.RetrieveAPIView):
     queryset = Intersection.objects.all()
     serializer_class = IntersectionSerializer
     lookup_field = "intersection_id"
-
-
-def get_intersection_by_id(intersection_id):
-    try:
-        intersection = Intersection.objects.get(intersection_id=intersection_id)
-    except Intersection.DoesNotExist:
-        return Response(
-            {"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND
-        )
-    return intersection
 
 
 class IntersectionEventUpdateView(APIView):
@@ -124,7 +136,7 @@ class IntersectionCarView(APIView):
         car_data_modifier = int(
             request.path.split("/")[-2][-1]
         )  # Get the digit after the last '/' before 'cars'
-        start_time, end_time = self._get_time_range(car_data_modifier)
+        start_time, end_time = get_time_range(car_data_modifier)
         total_cars = Car.objects.filter(
             intersection=intersection,
             detected_at__time__gte=start_time,
@@ -150,17 +162,6 @@ class IntersectionCarView(APIView):
         response_data = {"hourly_counts": hourly_counts, "total_cars": total_cars}
         return Response(response_data, status=status.HTTP_200_OK)
 
-    def _get_time_range(self, car_data_modifier):
-        if car_data_modifier == 1:
-            return time(0, 0), time(12, 0)
-        elif car_data_modifier == 2:
-            return time(12, 0), time(23, 59)
-        else:
-            return Response(
-                {"error": "Invalid car data modifier."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
 
 class IntersectionClassificationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -182,7 +183,7 @@ class IntersectionClassificationDetailView(APIView):
         car_data_modifier = int(
             request.path.split("/")[-1][-1]
         )  # Get the digit after the last '/' before 'classifications'
-        start_time, end_time = self._get_time_range(car_data_modifier)
+        start_time, end_time = get_time_range(car_data_modifier)
         total_cars = Car.objects.filter(
             intersection=intersection,
             classification=classification.replace("_", " "),
@@ -209,14 +210,3 @@ class IntersectionClassificationDetailView(APIView):
 
         response_data = {"hourly_counts": hourly_counts, "total_cars": total_cars}
         return Response(response_data, status=status.HTTP_200_OK)
-
-    def _get_time_range(self, car_data_modifier):
-        if car_data_modifier == 1:
-            return time(0, 0), time(12, 0)
-        elif car_data_modifier == 2:
-            return time(12, 0), time(23, 59)
-        else:
-            return Response(
-                {"error": "Invalid car data modifier."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
