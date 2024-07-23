@@ -33,16 +33,21 @@ class IntersectionView(generics.RetrieveAPIView):
     lookup_field = "intersection_id"
 
 
+def get_intersection_by_id(intersection_id):
+    try:
+        intersection = Intersection.objects.get(intersection_id=intersection_id)
+    except Intersection.DoesNotExist:
+        return Response(
+            {"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+    return intersection
+
+
 class IntersectionEventUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, intersection_id):
-        try:
-            intersection = Intersection.objects.get(intersection_id=intersection_id)
-        except Intersection.DoesNotExist:
-            return Response(
-                {"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+        intersection = get_intersection_by_id(intersection_id)
 
         safety, _ = Safety.objects.get_or_create(intersection=intersection)
         safety.update_safety(request.data)
@@ -79,10 +84,7 @@ class IntersectionCarCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, intersection_id):
-        try:
-            intersection = Intersection.objects.get(intersection_id=intersection_id)
-        except Intersection.DoesNotExist:
-            return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+        intersection = get_intersection_by_id(intersection_id)
 
         car_input_serializer = IntersectionCarInputSerializer(data=request.data)
         if car_input_serializer.is_valid():
@@ -113,91 +115,108 @@ class IntersectionCarCreateView(APIView):
         return Response(car_input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class IntersectionCarView(APIView):
-#     def get(self, request, intersection_id):
-#         try:
-#             intersection = Intersection.objects.get(intersection_id=intersection_id)
-#         except Intersection.DoesNotExist:
-#             return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
-#         car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
-#         if car_data_modifier == 1:
-#             start_time = time(0, 0)  # 12:00 AM
-#             end_time = time(12, 0)  # 12:00 PM
-#         elif car_data_modifier == 2:
-#             start_time = time(12, 0)  # 12:00 PM
-#             end_time = time(23, 59)  # 11:59 PM
-#         else:
-#             return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         cars = Car.objects.filter(intersection=intersection, detected_at__time__range=(start_time, end_time))
-#         if not cars.exists():
-#             return Response({"error": "No car data found for this intersection in the specified time range"},
-#                             status=status.HTTP_404_NOT_FOUND)
-#         total_cars = cars.aggregate(total=Sum('count'))['total']
-#         classifications = cars.values('classification').annotate(count=Sum('count'))
-#         detected_at = cars.latest('detected_at').detected_at
-#         classification_counts = {entry['classification']: entry['count'] for entry in classifications}
-#         response_data = {
-#             "total_cars": total_cars,
-#             "classifications": classification_counts,
-#             "detected_at": f"from {start_time} to {end_time}",
-#         }
-#         return Response(response_data, status=status.HTTP_200_OK)
-
 class IntersectionCarView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, intersection_id):
-        try:
-            intersection = Intersection.objects.get(intersection_id=intersection_id)
-        except Intersection.DoesNotExist:
-            return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+        intersection = get_intersection_by_id(intersection_id)
 
-        car_data_modifier = int(request.path.split("/")[-2][-1])  # Get the digit after the last '/' before 'cars'
-        if car_data_modifier == 1:
-            start_time = time(0, 0)  # 12:00 AM
-            end_time = time(12, 0)  # 12:00 PM
-        elif car_data_modifier == 2:
-            start_time = time(12, 0)  # 12:00 PM
-            end_time = time(23, 59)  # 12:00 AM
-        else:
-            return Response({"error": "Invalid car data modifier."}, status=status.HTTP_400_BAD_REQUEST)
+        car_data_modifier = int(
+            request.path.split("/")[-2][-1]
+        )  # Get the digit after the last '/' before 'cars'
+        start_time, end_time = self._get_time_range(car_data_modifier)
         total_cars = Car.objects.filter(
             intersection=intersection,
             detected_at__time__gte=start_time,
-            detected_at__time__lt=end_time
-        ).aggregate(count=Sum('count'))['count']
+            detected_at__time__lt=end_time,
+        ).aggregate(count=Sum("count"))["count"]
 
-        hourly_counts = {f'chart{chart_num}': 0 for chart_num in range(1, 13)}  # From chart1 to chart12
+        hourly_counts = {
+            f"chart{chart_num}": 0 for chart_num in range(1, 13)
+        }  # From chart1 to chart12
         # Filter and count cars for each hour in the 12-hour timeframe
         for hour, chart_num in zip(range(start_time.hour, end_time.hour), range(1, 13)):
             start_time = time(hour, 0)
             end_time = time(hour + 1, 0)
-            if hour == 23:
-                end_time = time(hour + 1, 59)
+            if hour == 22:
+                end_time = time(23, 59)
             count = Car.objects.filter(
                 intersection=intersection,
                 detected_at__time__gte=start_time,
-                detected_at__time__lt=end_time
-            ).aggregate(count=Sum('count'))['count']
-            hourly_counts[f'chart{chart_num}'] = count if count else 0
+                detected_at__time__lte=end_time,
+            ).aggregate(count=Sum("count"))["count"]
+            hourly_counts[f"chart{chart_num}"] = count if count else 0
 
-        response_data = {
-            "hourly_counts": hourly_counts,
-            "total_cars": total_cars
-        }
+        response_data = {"hourly_counts": hourly_counts, "total_cars": total_cars}
         return Response(response_data, status=status.HTTP_200_OK)
+
+    def _get_time_range(self, car_data_modifier):
+        if car_data_modifier == 1:
+            return time(0, 0), time(12, 0)
+        elif car_data_modifier == 2:
+            return time(12, 0), time(23, 59)
+        else:
+            return Response(
+                {"error": "Invalid car data modifier."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class IntersectionClassificationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, intersection_id):
-        try:
-            intersection = Intersection.objects.get(intersection_id=intersection_id)
-        except Intersection.DoesNotExist:
-            return Response({"error": "Intersection not found."}, status=status.HTTP_404_NOT_FOUND)
+        intersection = get_intersection_by_id(intersection_id)
         cars = Car.objects.filter(intersection=intersection)
-        classifications = cars.values('classification').annotate(count=Sum('count'))
-        classification_counts = {entry['classification'] for entry in classifications}
+        classifications = cars.values("classification").annotate(count=Sum("count"))
+        classification_counts = {entry["classification"] for entry in classifications}
         return Response(classification_counts, status=status.HTTP_200_OK)
+
+
+class IntersectionClassificationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, intersection_id, classification):
+        intersection = get_intersection_by_id(intersection_id)
+
+        car_data_modifier = int(
+            request.path.split("/")[-1][-1]
+        )  # Get the digit after the last '/' before 'classifications'
+        start_time, end_time = self._get_time_range(car_data_modifier)
+        total_cars = Car.objects.filter(
+            intersection=intersection,
+            classification=classification.replace("_", " "),
+            detected_at__time__gte=start_time,
+            detected_at__time__lt=end_time,
+        ).aggregate(count=Sum("count"))["count"]
+
+        hourly_counts = {
+            f"chart{chart_num}": 0 for chart_num in range(1, 13)
+        }  # From chart1 to chart12
+        # Filter and count cars for each hour in the 12-hour timeframe
+        for hour, chart_num in zip(range(start_time.hour, end_time.hour), range(1, 13)):
+            start_time = time(hour, 0)
+            end_time = time(hour + 1, 0)
+            if hour == 22:
+                end_time = time(23, 59)
+            count = Car.objects.filter(
+                intersection=intersection,
+                classification=classification.replace("_", " "),
+                detected_at__time__gte=start_time,
+                detected_at__time__lte=end_time,
+            ).aggregate(count=Sum("count"))["count"]
+            hourly_counts[f"chart{chart_num}"] = count if count else 0
+
+        response_data = {"hourly_counts": hourly_counts, "total_cars": total_cars}
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def _get_time_range(self, car_data_modifier):
+        if car_data_modifier == 1:
+            return time(0, 0), time(12, 0)
+        elif car_data_modifier == 2:
+            return time(12, 0), time(23, 59)
+        else:
+            return Response(
+                {"error": "Invalid car data modifier."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
