@@ -3,7 +3,7 @@ from atlas_trafic_app.models import Safety, Efficiency, Environmental
 
 
 class Command(BaseCommand):
-    help = 'Reset scores data after 5 minutes'
+    help = "Reset scores data in the database"
 
     def handle(self, *args, **kwargs):
         Safety.objects.update(

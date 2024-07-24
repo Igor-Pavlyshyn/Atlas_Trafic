@@ -107,7 +107,6 @@ class IntersectionCarCreateView(APIView):
                         intersection=intersection,
                         classification=classification.replace("_", " "),
                         count=count,
-                        detected_at=detected_at,
                     )
                     classifications[classification.replace("_", " ")] = count
                     total_cars += count
