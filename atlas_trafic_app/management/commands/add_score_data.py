@@ -6,14 +6,9 @@ class Command(BaseCommand):
     help = "Add score data to the database"
 
     def handle(self, *args, **kwargs):
-        for i in range (1, 3):
-            intersection = Intersection.objects.get(id=i)
-            safety, _ = Safety.objects.get_or_create(intersection=intersection)
-
-            efficiency, _ = Efficiency.objects.get_or_create(intersection=intersection)
-
-            environmental, _ = Environmental.objects.get_or_create(intersection=intersection)
-            safety_data = {
+        safety_data = [
+            {
+                "intersection_id": i,
                 "accident_rate": 1,
                 "near_misses": 3,
                 "speeding": 5,
@@ -34,9 +29,13 @@ class Command(BaseCommand):
                     "broken_down_side": 1,
                 },
             }
-            safety.update_safety(safety_data)
+            for i in range(1, 3)
+        ]
+        Safety.objects.bulk_create([Safety(**data) for data in safety_data])
 
-            efficiency_data = {
+        efficiency_data = [
+            {
+                "intersection_id": i,
                 "congestion_level": 55,
                 "average_traffic_speed": {
                     "avg_speed": 45,
@@ -50,9 +49,13 @@ class Command(BaseCommand):
                 "is_school_hours": True,
                 "micro_mobility_wait_time": 60,
             }
-            efficiency.update_efficiency(efficiency_data)
+            for i in range(1, 3)
+        ]
+        Efficiency.objects.bulk_create([Efficiency(**data) for data in efficiency_data])
 
-            environmental_data = {
+        environmental_data = [
+            {
+                "intersection_id": i,
                 "vehicle_emissions": 35,
                 "fuel_consumption": 45,
                 "noise_pollution": 80,
@@ -60,6 +63,8 @@ class Command(BaseCommand):
                 "driving_conditions": {"visibility": 0.3, "weather": "rain"},
                 "fire_detection": 1,
             }
-            environmental.update_environmental(environmental_data)
+            for i in range(1, 3)
+        ]
+        Environmental.objects.bulk_create([Environmental(**data) for data in environmental_data])
 
-            print("Data has been added")
+        print("Data has been added")
