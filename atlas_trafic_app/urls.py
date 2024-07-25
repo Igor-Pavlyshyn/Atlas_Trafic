@@ -6,7 +6,8 @@ from .views import (
     IntersectionCarCreateView,
     IntersectionCarView,
     IntersectionClassificationView,
-    IntersectionClassificationDetailView
+    IntersectionClassificationDetailView,
+    MarkerView,
 )
 
 urlpatterns = [
@@ -54,5 +55,10 @@ urlpatterns = [
         "intersections/<int:intersection_id>/classifications/<str:classification>/<int:modifier>/",
         IntersectionClassificationDetailView.as_view(),
         name="intersection-classification-detail-2",
+    ),
+    path(
+        "markers/",
+        MarkerView.as_view(),
+        name="marker",
     )
 ]
