@@ -55,6 +55,23 @@ class IntersectionView(generics.RetrieveAPIView):
     lookup_field = "intersection_id"
 
 
+class MarkerView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        intersections = Intersection.objects.all()
+        markers_data = []
+        for intersection in intersections:
+            markers_data.append(
+                {
+                    "id": intersection.intersection_id,
+                    "lat": intersection.coordinates.split(", ")[0],
+                    "lng": intersection.coordinates.split(", ")[1],
+                }
+            )
+        return Response(markers_data, status=status.HTTP_200_OK)
+
+
 class IntersectionEventUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
